@@ -11,7 +11,7 @@ from typing import Optional
 
 from face_detection import FaceDetector
 from smoothing import FaceTracker
-from tracking import MovementTracker, CoordinateDisplay, TrackingVisualizer
+from tracking import MovementTracker, CoordinateDisplay, TrackingVisualizer, DistanceEstimator
 
 
 class FaceTrackingApp:
@@ -39,6 +39,7 @@ class FaceTrackingApp:
         self.face_detector = FaceDetector()
         self.face_tracker = FaceTracker(smoothing_alpha, hold_frames)
         self.movement_tracker = MovementTracker(movement_threshold)
+        self.distance_estimator = DistanceEstimator()
         
         # UI settings
         self.font = cv2.FONT_HERSHEY_SIMPLEX
@@ -136,7 +137,7 @@ class FaceTrackingApp:
         
         # Draw semi-transparent background for text
         overlay = frame.copy()
-        cv2.rectangle(overlay, (10, 10), (w - 10, 120), self.bg_color, -1)
+        cv2.rectangle(overlay, (10, 10), (w - 10, 155), self.bg_color, -1)
         frame = cv2.addWeighted(frame, 0.7, overlay, 0.3, 0)
         
         # Status text
@@ -149,17 +150,35 @@ class FaceTrackingApp:
         cv2.putText(frame, f"FPS: {self.current_fps:.1f}", (20, 60), 
                    self.font, self.font_scale, self.text_color, self.font_thickness)
         
-        # Coordinates and movement
+        # Coordinates, distance and movement
         if center:
             coord_text = CoordinateDisplay.format_coords(center[0], center[1], dx, dy)
             cv2.putText(frame, coord_text, (20, 85), 
                        self.font, self.font_scale, self.text_color, self.font_thickness)
             
+            # Distance estimation
+            if face_box:
+                distance = self.distance_estimator.estimate_distance(face_box[2])
+                distance_text = CoordinateDisplay.format_distance(distance)
+                
+                # Use distance-based color for bounding box
+                distance_color = self.distance_estimator.get_distance_color(distance)
+                
+                # Draw face box with distance color
+                cv2.rectangle(frame, 
+                           (face_box[0], face_box[1]), 
+                           (face_box[0] + face_box[2], face_box[1] + face_box[3]),
+                           distance_color, 2)
+                
+                # Display distance
+                cv2.putText(frame, distance_text, (20, 110), 
+                           self.font, self.font_scale, self.text_color, self.font_thickness)
+            
             # Movement info
             avg_dx, avg_dy = self.movement_tracker.get_average_movement()
             total_dist = self.movement_tracker.get_total_distance()
             movement_text = CoordinateDisplay.format_movement_info(direction, avg_dx, avg_dy, total_dist)
-            cv2.putText(frame, movement_text, (20, 110), 
+            cv2.putText(frame, movement_text, (20, 135), 
                        self.font, self.font_scale, self.text_color, self.font_thickness)
         
         # Instructions
@@ -269,10 +288,16 @@ class FaceTrackingApp:
                 # Display frame
                 cv2.imshow('Face Tracking', processed_frame)
                 
-                # Check for quit
+                # Check for quit and calibration
                 key = cv2.waitKey(1) & 0xFF
                 if key == ord('q'):
                     break
+                elif key == ord('1') and tracked_face:
+                    # Calibrate for 1 meter distance
+                    self.distance_estimator.calibrate(1.0, tracked_face[2])
+                elif key == ord('2') and tracked_face:
+                    # Calibrate for 2 meter distance
+                    self.distance_estimator.calibrate(2.0, tracked_face[2])
                 
         except KeyboardInterrupt:
             print("\nApplication interrupted by user")
@@ -305,7 +330,12 @@ def main():
     if demo_mode:
         print("=== DEMO MODE ===")
         print("Simulating face movement to demonstrate tracking features")
-        print("Press 'q' to quit")
+    else:
+        print("=== FACE TRACKING WITH DISTANCE ESTIMATION ===")
+        print("Press '1' to calibrate for 1 meter distance")
+        print("Press '2' to calibrate for 2 meter distance")
+    
+    print("Press 'q' to quit")
     
     # Create and run application
     app = FaceTrackingApp(**config)

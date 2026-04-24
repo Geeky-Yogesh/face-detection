@@ -2,14 +2,18 @@
 
 A modular Python project for real-time, stable face detection and tracking using webcam with OpenCV Haar cascades.
 
-## Features
+## Key Features
 
 - **Face Detection**: Real-time face detection using OpenCV Haar cascade
-- **Stable Tracking**: Alpha-blend smoothing for flicker-free bounding boxes
-- **Center Tracking**: Track face center coordinates and movement deltas
-- **Missing Face Handling**: Hold last position for 5-10 frames when face is lost
-- **Clean UI**: Bounding boxes, center dots, coordinates display, and status text
-- **Real-time Performance**: Optimized for 15-30 FPS
+- **Distance Estimation**: Camera-to-face distance measurement in meters
+- **Color-coded Bounding Boxes**: Visual distance indicators (green=close, red=far)
+- **Calibration System**: Improve accuracy with known distance measurements
+- **Stable Tracking**: Alpha-blend smoothing eliminates flicker during fast movements
+- **Size Stabilization**: Prevents bounding box shrinking when turning sideways  
+- **Movement Analysis**: Real-time center tracking with directional movement deltas
+- **Demo Mode**: Test without webcam using simulated face movement
+- **Modular Architecture**: Clean separation of detection, smoothing, and tracking logic
+- **Optimized Performance**: 15-30 FPS with efficient OpenCV implementation
 
 ## Installation
 
@@ -31,11 +35,21 @@ python main.py --demo
 
 Press 'q' to quit the application.
 
+**Distance Estimation Controls:**
+- Press '1' to calibrate for 1 meter distance
+- Press '2' to calibrate for 2 meter distance
+
 **Demo Mode Features:**
 - Simulated face movement with smooth patterns
 - Demonstrates all tracking features without camera
 - Shows stable bounding box smoothing
 - Displays movement tracking and trajectory
+
+**Distance Estimation Features:**
+- Real-time camera-to-face distance measurement
+- Color-coded bounding boxes (green=close, red=far)
+- Calibration system for improved accuracy
+- Distance display in meters with 2-decimal precision
 
 ## Project Structure
 

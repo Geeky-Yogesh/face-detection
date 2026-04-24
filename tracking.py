@@ -7,6 +7,74 @@ import numpy as np
 from typing import Tuple, Optional
 
 
+class DistanceEstimator:
+    """Simple distance estimation using face size"""
+    
+    def __init__(self):
+        # Average face width in meters
+        self.average_face_width = 0.15
+        
+        # Calibration factor (pixels per meter at 1m distance)
+        # This is an approximation - you can calibrate it
+        self.pixels_per_meter = 400  # Default: 400px = 1m at 1m distance
+    
+    def estimate_distance(self, face_width_pixels: int) -> float:
+        """
+        Estimate distance from camera based on face width
+        
+        Args:
+            face_width_pixels: Detected face width in pixels
+            
+        Returns:
+            Estimated distance in meters
+        """
+        if face_width_pixels <= 0:
+            return 0.0
+        
+        # Using inverse proportion: distance = (known_width * pixel_ratio) / detected_width
+        # Simplified: distance = average_face_width / (detected_width / pixels_per_meter)
+        face_width_meters = face_width_pixels / self.pixels_per_meter
+        
+        if face_width_meters > 0:
+            return self.average_face_width / face_width_meters
+        
+        return 0.0
+    
+    def calibrate(self, known_distance: float, measured_face_width: int):
+        """
+        Calibrate the distance estimation
+        
+        Args:
+            known_distance: Actual distance from camera in meters
+            measured_face_width: Face width measured at that distance in pixels
+        """
+        # Calculate pixels per meter based on known distance
+        face_width_at_distance = measured_face_width / known_distance
+        self.pixels_per_meter = face_width_at_distance / self.average_face_width
+        
+        print(f"Calibrated: {known_distance}m distance = {measured_face_width}px face width")
+        print(f"Pixels per meter: {self.pixels_per_meter:.2f}")
+    
+    def get_distance_color(self, distance: float) -> tuple:
+        """
+        Get color based on distance (green = close, red = far)
+        
+        Args:
+            distance: Distance in meters
+            
+        Returns:
+            BGR color tuple
+        """
+        if distance < 0.5:
+            return (0, 255, 0)  # Green - very close
+        elif distance < 1.0:
+            return (0, 255, 255)  # Yellow - close
+        elif distance < 2.0:
+            return (0, 165, 255)  # Orange - medium
+        else:
+            return (0, 0, 255)  # Red - far
+
+
 class MovementTracker:
     def __init__(self, movement_threshold: int = 5):
         """
@@ -141,6 +209,19 @@ class CoordinateDisplay:
             Formatted coordinate string
         """
         return f"Center: ({cx}, {cy}) | Delta: ({dx:+d}, {dy:+d})"
+    
+    @staticmethod
+    def format_distance(distance: float) -> str:
+        """
+        Format distance for display
+        
+        Args:
+            distance: Distance in meters
+            
+        Returns:
+            Formatted distance string
+        """
+        return f"Distance: {distance:.2f}m"
     
     @staticmethod
     def format_movement_info(direction: str, avg_dx: float, avg_dy: float, 
